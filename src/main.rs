@@ -1,18 +1,30 @@
-use std::{fs, io::Read, io::Result};
+use std::{
+    fs::File,
+    io::{self, BufReader, ErrorKind::InvalidData, Read, Result},
+};
 
 fn main() -> Result<()> {
-    let mut file = fs::File::open("src/messages.txt")?;
+    let file = File::open("src/messages.txt")?;
+    let mut reader = BufReader::new(file);
     let mut buffer: [u8; 8] = [0; 8];
 
     loop {
-        let bytes = file.read(&mut buffer)?;
+        let bytes = reader.read(&mut buffer)?;
         if bytes == 0 {
             break;
         };
 
-        let current_data = &buffer[..bytes];
-        let s = std::str::from_utf8(current_data).expect("invalid UTF-8");
-        print!("{}", s);
+        let value: &[u8] = &buffer[..bytes];
+
+        match str::from_utf8(&value) {
+            Ok(s) => print!("{s}"),
+            Err(e) => {
+                return Err(io::Error::new(
+                    InvalidData,
+                    format!("UTF-8 decoding failed: {e}"),
+                ));
+            }
+        }
     }
     println!();
 
